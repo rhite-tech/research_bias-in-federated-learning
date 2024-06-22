@@ -25,7 +25,7 @@ This README provides all information necessary to reproduce the work as proposed
 ├── data_analysis_acs.ipynb
 ├── utils.py
 ├── fl_pipeline.py
-├── all_models.py
+├── train_test.py
 ├── data_loader.py
 └── requirements.txt
 ```
