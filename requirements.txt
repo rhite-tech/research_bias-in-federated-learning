@@ -1,0 +1,17 @@
+numpy
+torch
+flwr
+flwr[simulation]
+pandas
+pandas-utils
+plotly
+seaborn
+scikit-learn
+torchvision
+ipywidgets
+fairlearn
+folktables
+clingo
+matplotlib
+seaborn
+plotly
