@@ -1,22 +1,13 @@
-########
-# Given .CSV file of all datasamples, split dataset in different client formations
-
 # general imports
 import numpy as np
 import pandas as pd
 import os
 import torch
-import torch.nn as nn
-import argparse
 import random
 
 
 # imports from libraries
-from collections import OrderedDict
-from typing import Dict, List, Optional, Tuple, Union
-from torch.utils.data import Subset, Dataset, DataLoader, random_split, ConcatDataset, StackDataset, ChainDataset
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
+from torch.utils.data import Dataset, DataLoader, random_split, ConcatDataset
 from utils import check_all_classes
 
 
@@ -60,8 +51,6 @@ class CENSUSData(Dataset):
     def prepare_data(self, dataframe):
         '''Prepare data per individual .csv file of every state'''
 
-        # load data
-        # df_state = pd.read_csv(self.file_path)        
         # delete non-relevant columns
         feature_names = ['Sex', 'Race', 'Class of Worker', 'Education', 'Age', 'Marital Status', 'Occupation', 'Place of Birth', 'Worked hours', 'Income']
         
@@ -76,15 +65,6 @@ class CENSUSData(Dataset):
         for feature, mapping in label_mappings.items():
             data[feature] = data[feature].map(mapping)
 
-        # # Undersampling the majority class
-        # count_class_0, count_class_1 = data['Income'].value_counts()
-        # df_class_0 = data[data['Income'] == 0]
-        # df_class_1 = data[data['Income'] == 1]
-        
-        # df_class_0_under = df_class_0.sample(count_class_1, random_state=42)  # Using a random state for reproducibility
-        # data = pd.concat([df_class_0_under, df_class_1], axis=0)
-        # data.reset_index(drop=True, inplace=True)
-        # print(data['Income'])
         return data
     
 def get_range(dataset, feature):
@@ -95,7 +75,6 @@ def sample_by_feature(dataset, feature, value):
     Sample all data points where the feature label equals value.
     Returns both the sampled data points as a list and the filtered DataFrame.
     """
-    # print(f"I am sampling feature{feature} for value {value}")
     # Filter data where label equals value
     filtered_indices = dataset.index[dataset[feature] == value].tolist()
     
@@ -133,6 +112,7 @@ def filepath_list(list_states):
     return file_list
 
 def get_state_clients(list_states):
+    "Get clients if every state is one client"
     clients = []
     data_folderpath = os.path.join(current_path, 'acs_data')
     for dataset_path in filepath_list(list_states):
@@ -140,16 +120,6 @@ def get_state_clients(list_states):
         client_df = pd.read_csv(clientpath)
         dataset = CENSUSData(client_df)
         clients.append(dataset)
-    return clients
-
-def get_state_clients_synthetic():
-    clients = []
-    path = '/home/jelke/Documents/AI/Thesis/fl_code/synthetic_dataset.csv'
-    dataset = pd.read_csv(path)
-    grouped = dataset.groupby('State')
-    for state_df in grouped:
-        state_data = CENSUSData(state_df)
-        clients.append(state_data)
     return clients
 
 def load_data(clients, seed, batch_size, shuffle=True, missing=True):
@@ -256,18 +226,13 @@ def split_quantity_nonequal(num_clients, client_sizes, data_folderpath, seed):
     """
     df = pd.read_csv(os.path.join(data_folderpath, 'ACS-2022-complete.csv'))
     df_shuffled = df.sample(frac=1, random_state=seed).reset_index(drop=True)  # Shuffle the DataFrame
-    # print(len(df))
 
     assert num_clients == len(client_sizes), "Number of clients must match the length of client_sizes"
 
-    # print('num clients', num_clients)
-    # print(len(client_sizes))
-    # print(client_sizes)
     clients = []
     start_idx = 0
     for size in client_sizes:
         end_idx = start_idx + size
-        # print(end_idx)
         if end_idx > len(df_shuffled):
             # If the range exceeds the DataFrame length, truncate the range
             end_idx = len(df_shuffled)
@@ -284,12 +249,10 @@ def split_quantity_nonequal(num_clients, client_sizes, data_folderpath, seed):
 
         # Break if we have allocated all available rows
         if start_idx >= len(df_shuffled):
-            # print('done!')
             break
-    # print(len(clients))
     return clients
 
-def create_clients_equal(rough_clients, num_clients, seed):
+def create_clients_equal(split, num_clients, seed):
     """
     Function that creates equally sized clients from rough_clients as given by data-split on label/feature
 
@@ -298,29 +261,25 @@ def create_clients_equal(rough_clients, num_clients, seed):
     """
     random.seed(seed)
     new_clients = []
-
-    # print('number of rough_clients')
     
     # calculate how much every rough_client should be split in, should be at least 1
-    new_client_per_rough = max(1, num_clients // len(rough_clients))
-    # print('Number of new clients per rough client', new_client_per_rough)
+    new_client_per_rough = max(1, num_clients // len(split))
     
-    smallest_len = min(len(df) for df in rough_clients) // max(1, new_client_per_rough)
-    # print('Small len', smallest_len)
+    smallest_len = min(len(df) for df in split) // max(1, new_client_per_rough)
 
     actual_client_counter = 0
 
-    for i, r_client in enumerate(rough_clients):
-        # print('Rough client number', i)
-        r_client = r_client.sample(frac=1, random_state=seed).reset_index(drop=True)  # Shuffle the DataFrame
+    # loop through all categories in split
+    for i, r_client in enumerate(split):
+
+        # shuffle the category
+        r_client = r_client.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+        # split every split-category in more clients
         for i in range(new_client_per_rough):
-            # print('number of client', actual_client_counter)
             sub_df = r_client.iloc[i * smallest_len: (i + 1) * smallest_len].reset_index(drop=True)
-            # print(sub_df)
-            # print('=======================================')
             new_clients.append(CENSUSData(sub_df))
             actual_client_counter += 1
-        # print('-------------------------------------------------------------------')
     
     return new_clients
 
@@ -415,8 +374,6 @@ def create_percentage_equal(split, num_clients, perc, seed):
             # Ensure sizes do not exceed available samples
             group1_size = min(group1_size, len(group1))
             group2_size = min(group2_size, len(group2))
-
-            print(group2_size)
             
             group1_sample = group1.sample(n=group1_size, random_state=seed)
             group2_sample = group2.sample(n=group2_size, random_state=seed)
@@ -547,6 +504,7 @@ def split_feature_percentage(feature, data_folderpath, num_clients, perc, seed):
 
     return clients, len(clients)
 
+
 def split_label(data_folderpath, num_clients, seed):
     """
     LABEL HETEROGENEITY: sample based on label, crop data-split to equally sized clients
@@ -569,6 +527,7 @@ def split_label(data_folderpath, num_clients, seed):
 
     return clients, len(clients)
 
+
 def split_label_percentage(data_folderpath, num_clients, perc, seed):
     """
     LABEL HETEROGENEITY: sample based on label, crop data-split to equally sized clients
@@ -590,6 +549,7 @@ def split_label_percentage(data_folderpath, num_clients, perc, seed):
     clients = create_percentage_equal(split, num_clients, perc, seed)
 
     return clients, len(clients)
+
 
 def split_quantity_feature(feature, data_folderpath, num_clients, seed):
     """
@@ -654,6 +614,7 @@ def split_quantity_label(data_folderpath, num_clients, seed):
 
     return clients, len(clients)
 
+
 def split_quantity_label_percentage(data_folderpath, num_clients, perc, seed):
     """
     FEATURE + QUANTITY HETEROGENEITY: sample based on label, crop data-split to non-equal sized clients
@@ -674,6 +635,7 @@ def split_quantity_label_percentage(data_folderpath, num_clients, perc, seed):
     clients = create_percentage_unequal(rough_clients, num_clients, perc, seed)
 
     return clients, len(clients)
+
 
 def split_feature_label(feature, data_folderpath, num_clients, seed):
     """
@@ -696,6 +658,7 @@ def split_feature_label(feature, data_folderpath, num_clients, seed):
     clients = create_clients_equal(rough_clients, num_clients, seed)
     return clients, len(clients)
 
+
 def split_quantity_feature_label(feature, data_folderpath, num_clients, seed):
     """
     FEATURE + LABEL + QUANTITY HETEROGENEITY: sample based on label and feature, crop data-split to non-equally sized clients
@@ -716,16 +679,3 @@ def split_quantity_feature_label(feature, data_folderpath, num_clients, seed):
     # create unequal clients from the rough divisions
     clients = create_clients_unequal(rough_clients, num_clients, seed)
     return clients, len(clients)
-
-# def main():
-#     num_clients = 4
-#     seed = 42
-#     clients, len_clients = split_feature_percentage("Sex", data_folderpath, num_clients, 0.75, seed)
-#     # clients, len_clients = split_label_percentage(data_folderpath, num_clients, seed)
-#     clients, len_clients = split_quantity_label_percentage(data_folderpath, num_clients, 0.75, seed)
-#     for cl in clients:
-#         print(len(cl))
-#     trainloaders, valloaders, testloaders, central_train_loader, central_val_loader, central_test_loader, missing_classes = load_data(clients, seed, batch_size=32, shuffle=True, missing=True)
-#     print(missing_classes)
-
-# main()

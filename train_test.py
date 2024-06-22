@@ -1,21 +1,12 @@
 # general imports
 import numpy as np
-import pandas as pd
-import flwr as fl
 import os
 import torch
 import torch.nn as nn
-import glob
-import warnings
 
 # imports from libraries
 from collections import OrderedDict
-from typing import Dict, List, Optional, Tuple, Union
-from logging import WARNING
-from platform import python_version
-from torch.utils.data import Dataset, DataLoader, ConcatDataset, StackDataset, ChainDataset
-from sklearn.preprocessing import LabelEncoder
-from fairlearn.metrics import equalized_odds_difference, equalized_odds_ratio, demographic_parity_ratio
+from typing import List
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 current_path = os.getcwd()
@@ -89,10 +80,6 @@ def train(model, trainloader, epochs: int, lr, verbose=True):
         # loop through batches
         for batch in trainloader:
             features, labels = batch[0].to(DEVICE), batch[1].to(DEVICE)
-
-            # for i in range(len(labels)):
-            #     feature_label = torch.cat((features[i], labels.unsqueeze(1)[i]))
-            #     train_samples.append(feature_label)
 
             # optimize parameters 
             optimizer.zero_grad()
@@ -267,6 +254,7 @@ def calculate_eo_ratio(labels, preds, sensitive_attributes):
 
     return EO_ratio, min_key, max_key
 
+
 def calculate_eo_difference(labels, preds, sensitive_attributes):
     """Calculate equalized odds difference based on predictions, labels and sensitive attribute labels"""
 
@@ -313,6 +301,7 @@ def calculate_eo_difference(labels, preds, sensitive_attributes):
 
     return EO_diff, (min_tpr_class if tpr_diff >= fpr_diff else min_fpr_class), (max_tpr_class if tpr_diff >= fpr_diff else max_fpr_class)
 
+
 def calculate_dp_ratio(labels, preds, sensitive_attributes):
     """Calculate demographic parity ratio score based on predictions, labels and sensitive attribute labels"""
     
@@ -348,6 +337,7 @@ def calculate_dp_ratio(labels, preds, sensitive_attributes):
     DP_ratio = min_positive_rate / max_positive_rate if max_positive_rate != 0 else np.nan
 
     return DP_ratio, min_positive_rate_class, max_positive_rate_class
+
 
 def calculate_dp_difference(labels, preds, sensitive_attributes):
     """Calculate demographic parity difference based on predictions, labels and sensitive attribute labels"""

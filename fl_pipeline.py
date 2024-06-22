@@ -1,7 +1,6 @@
 # general imports
 import numpy as np
 import flwr as fl
-import os
 import torch
 import torch.nn as nn
 import warnings
@@ -11,9 +10,6 @@ import warnings
 from collections import OrderedDict
 from typing import Dict, List, Optional, Tuple, Union
 from logging import WARNING
-# from sklearn.metrics import log_loss
-# from fairlearn.metrics import equalized_odds_difference, equalized_odds_ratio, demographic_parity_ratio
-
 
 # all flower helper functions 
 from flwr.common import (FitRes, NDArrays, Parameters, Scalar, Metrics)
@@ -131,10 +127,6 @@ def run_fl(model, trainloaders, valloaders, complete_trainloader, complete_vallo
             server_round: int, parameters: NDArrays, config: Dict[str, Scalar]
         ) -> Optional[Tuple[float, Dict[str, Scalar]]]:
 
-            # Load the saved model
-            # for i in range(NUM_ROUNDS):
-            # model.load_state_dict(torch.load(f"acs_trained_models/model_round_{NUM_ROUNDS+1}.pth"))
-
             loss_function = nn.CrossEntropyLoss()
             total_loss, correct_predictions, total_samples = 0, 0, 0.0
             model.eval()
@@ -168,8 +160,10 @@ def run_fl(model, trainloaders, valloaders, complete_trainloader, complete_vallo
                 total_sensitive_attributes_sex += sensitive_attributes_sex.cpu()
                 total_sensitive_attributes_race += sensitive_attributes_race.cpu()
 
+            # Create binary categorization of race-classes
             white_nonwhite = [0 if x == 1 else 1 for x in total_sensitive_attributes_race]
             black_nonblack = [0 if x == 2 else 1 for x in total_sensitive_attributes_race]
+
             # obtain fairness metrics for both sensitive attributes
             dp_sex, dp_min_class_sex, dp_max_class_sex = calculate_dp_ratio(torch.Tensor(total_labels), torch.Tensor(total_predicted), torch.Tensor(total_sensitive_attributes_sex))
             dp_race, dp_min_class_race, dp_max_class_race = calculate_dp_ratio(torch.Tensor(total_labels), torch.Tensor(total_predicted), torch.Tensor(total_sensitive_attributes_race))
