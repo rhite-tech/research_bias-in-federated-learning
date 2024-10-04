@@ -1,5 +1,7 @@
 # Bridging Fairness and Privacy: An Experimental Analysis of Bias Assessment in Federated Learning
-This repository contains the work from "Bridging Fairness and Privacy: An Experimental Analysis of Bias Assessment in Federated Learning", a master thesis by Jelke Matthijsse. This work assesses group biases within privacy-preserving federated learning. The focus of this research is two-fold. First, this research assesses the correctness of the currently used aggregated local bias detection approaches in federated learning. Secondly, this research assesses biases that can be perpetuated by the federated learning framework. 
+This repository corresponds to the Master's thesis in Artificial Intelligence by Jelke Matthijsse, at University of Amsterdam, 2024. This research is part of a project on Bias Identification methods initiated by Rhite and has been guided and supervised by Rhite and the University of Amsterdam.
+
+This work assesses group biases within privacy-preserving federated learning. The focus of this research is two-fold. First, this research assesses the correctness of the currently used aggregated local bias detection approaches in federated learning. Secondly, this research assesses biases that can be perpetuated by the federated learning framework. 
 
 This evaluation is done by comparing three model pipelines. These pipelines are compared with each other, according to Figure 4.1. 
 1. Aggregated local bias assessment of a global model trained with federated learning.
