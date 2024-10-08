@@ -10,9 +10,13 @@ This evaluation is done by comparing three model pipelines. These pipelines are 
 
 ![image](https://github.com/jelkejm/thesis/assets/77006994/26a1bb6c-310d-4e9a-ac33-aec7abac4ee9)
 
-
-
 This README provides all information necessary to reproduce the work as proposed in "A Holistic Analysis of Bias Assessment in Federated Learning". This README first provides an overview of the repository. Secondly, instructions on the requirements are given. Then it will be explained how the necessary data can be obtained. Thereafter, an explenation of the experimental setup is provided. Lastly, it will be discussed how the results from the experiments can be interpreted.
+
+**⚠️ Note on Code Quality**
+
+Please note that this code was developed as part of a thesis project and, due to time constraints, has not undergone extensive optimization or formal quality checks. While it serves the primary purpose of supporting the research findings, it may not meet industry standards in terms of performance, maintainability, security or robustness.
+
+Users are welcome to use and explore the code, but we recommend careful consideration and further testing before applying it in any production environment. Contributions for improvements or optimizations are also encouraged.
 
 # Directory structure
 ```
